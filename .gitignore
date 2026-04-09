@@ -1,0 +1,14 @@
+outputs/
+models/
+piper/
+ffmpeg/
+music/
+.env
+__pycache__/
+*.pyc
+*.wav
+*.mp3
+.venv/
+venv/
+temp_voice.wav
+temp_input.txt

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SurakshaVaani — AI Safety Narrator</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0e14;
+  --surface:   #111820;
+  --panel:     #161e28;
+  --border:    #1e2d3d;
+  --accent:    #f97316;
+  --accent2:   #fb923c;
+  --safe:      #22c55e;
+  --warn:      #eab308;
+  --danger:    #ef4444;
+  --text:      #e2e8f0;
+  --muted:     #64748b;
+  --hindi:     #fbbf24;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Grid background ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(249,115,22,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(249,115,22,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Header ── */
+header {
+  position: relative; z-index: 10;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,14,20,0.95);
+  backdrop-filter: blur(12px);
+  padding: 0 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px;
+}
+
+.logo {
+  display: flex; align-items: center; gap: 12px;
+}
+.logo-icon {
+  width: 38px; height: 38px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 20px rgba(249,115,22,0.4);
+}
+.logo-text h1 {
+  font-size: 20px; font-weight: 700; letter-spacing: 2px;
+  color: var(--text);
+}
+.logo-text p { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+.status-bar {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--safe); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Main layout ── */
+main {
+  position: relative; z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media(max-width: 768px) {
+  main { grid-template-columns: 1fr; }
+}
+
+/* ── Panel ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel);
+}
+.panel-header .icon { font-size: 18px; }
+.panel-header h2 { font-size: 14px; font-weight: 600; letter-spacing: 1.5px; color: var(--text); }
+.panel-header .badge {
+  margin-left: auto;
+  font-size: 10px; font-family: 'JetBrains Mono', monospace;
+  background: rgba(249,115,22,0.15); color: var(--accent);
+  padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(249,115,22,0.3);
+}
+.panel-body { padding: 20px; }
+
+/* ── Input section spans full width ── */
+.input-section { grid-column: 1 / -1; }
+
+/* ── Textarea ── */
+.input-group { margin-bottom: 16px; }
+label {
+  display: block; margin-bottom: 8px;
+  font-size: 12px; letter-spacing: 1px; color: var(--muted);
+}
+textarea, input[type=text] {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  padding: 12px 16px;
+  resize: vertical;
+  transition: border-color 0.2s;
+  outline: none;
+}
+textarea:focus, input[type=text]:focus { border-color: var(--accent); }
+textarea { min-height: 90px; }
+
+/* ── Example chips ── */
+.examples {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+}
+.example-chip {
+  font-size: 12px; padding: 5px 12px;
+  background: rgba(249,115,22,0.08);
+  border: 1px solid rgba(249,115,22,0.2);
+  border-radius: 20px; cursor: pointer;
+  color: var(--accent2); transition: all 0.2s;
+  font-family: 'Rajdhani', sans-serif;
+}
+.example-chip:hover { background: rgba(249,115,22,0.18); border-color: var(--accent); }
+
+/* ── Generate button ── */
+.generate-btn {
+  width: 100%; padding: 14px;
+  background: var(--accent);
+  border: none; border-radius: 8px;
+  color: white; font-family: 'Rajdhani', sans-serif;
+  font-size: 16px; font-weight: 700; letter-spacing: 2px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.generate-btn:hover  { background: var(--accent2); box-shadow: 0 0 24px rgba(249,115,22,0.4); }
+.generate-btn:active { transform: scale(0.98); }
+.generate-btn:disabled { background: var(--muted); cursor: not-allowed; box-shadow: none; }
+
+/* ── Progress ── */
+.progress-wrap { margin-top: 16px; display: none; }
+.progress-wrap.visible { display: block; }
+.progress-steps { display: flex; flex-direction: column; gap: 6px; }
+.step {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; font-family: 'JetBrains Mono', monospace;
+  color: var(--muted); transition: color 0.3s;
+}
+.step.active { color: var(--accent); }
+.step.done   { color: var(--safe); }
+.step-icon   { font-size: 16px; width: 20px; text-align: center; }
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(249,115,22,0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Story output ── */
+.story-text {
+  font-size: 14px; line-height: 1.8;
+  color: var(--text); white-space: pre-wrap;
+  min-height: 120px;
+}
+.story-text.hindi {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 15px; color: var(--hindi); line-height: 2;
+}
+.placeholder {
+  color: var(--muted); font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex; align-items: center; justify-content: center;
+  height: 120px; text-align: center; opacity: 0.5;
+}
+
+/* ── Audio player ── */
+.audio-section { grid-column: 1 / -1; display: none; }
+.audio-section.visible { display: block; }
+
+.audio-player-wrap {
+  display: flex; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+}
+audio {
+  flex: 1; min-width: 260px;
+  accent-color: var(--accent);
+  filter: invert(0);
+}
+.download-btn {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--accent); cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px; font-weight: 600; letter-spacing: 1px;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.download-btn:hover { background: rgba(249,115,22,0.1); }
+
+.mood-tag {
+  font-size: 12px; padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.mood-calm        { background: rgba(34,197,94,0.15);  color: var(--safe); border: 1px solid rgba(34,197,94,0.3); }
+.mood-tense       { background: rgba(239,68,68,0.15);  color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+.mood-inspirational { background: rgba(234,179,8,0.15); color: var(--warn); border: 1px solid rgba(234,179,8,0.3); }
+
+/* ── Error ── */
+.error-box {
+  display: none; margin-top: 12px;
+  padding: 12px 16px; border-radius: 8px;
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+  color: #fca5a5; font-size: 13px;
+}
+.error-box.visible { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <div class="logo-text">
+      <h1>SURAKSHAVAANI</h1>
+      <p>AI SAFETY STORY NARRATOR · THERMAL POWER PLANT</p>
+    </div>
+  </div>
+  <div class="status-bar">
+    <div class="dot"></div>
+    <span>SYSTEM ONLINE</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Input Section -->
+  <div class="panel input-section">
+    <div class="panel-header">
+      <span class="icon">⚡</span>
+      <h2>SAFETY RULE INPUT</h2>
+      <span class="badge">MISTRAL + NLLB</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="input-group">
+        <label>PLANT NAME (OPTIONAL)</label>
+        <input type="text" id="plantName" placeholder="e.g. ThermalPlant Unit-2" value="PowerPlant"/>
+      </div>
+
+      <div class="input-group">
+        <label>ENTER SAFETY RULE / INSTRUCTION</label>
+        <textarea id="ruleInput" placeholder="e.g. Always wear proper personal protective equipment in operational areas before starting any task."></textarea>
+      </div>
+
+      <label>QUICK EXAMPLES</label>
+      <div class="examples">
+        <div class="example-chip" onclick="setExample(this)">Always follow LOTO before maintenance</div>
+        <div class="example-chip" onclick="setExample(this)">Verify PTW before starting any work</div>
+        <div class="example-chip" onclick="setExample(this)">Wear PPE at all times in operational areas</div>
+        <div class="example-chip" onclick="setExample(this)">Conduct toolbox talk before every shift</div>
+        <div class="example-chip" onclick="setExample(this)">Never bypass safety interlocks</div>
+      </div>
+
+      <button class="generate-btn" id="generateBtn" onclick="generate()">
+        <span id="btnIcon">🎙️</span>
+        <span id="btnText">GENERATE SAFETY STORY</span>
+      </button>
+
+      <div class="error-box" id="errorBox"></div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-steps">
+          <div class="step" id="step1"><span class="step-icon">📝</span> Generating safety story with Mistral AI...</div>
+          <div class="step" id="step2"><span class="step-icon">🌐</span> Translating to Hindi (NLLB)...</div>
+          <div class="step" id="step3"><span class="step-icon">🎵</span> Generating voice narration + audio mix...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- English Story -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="icon">📄</span>
+      <h2>ENGLISH STORY</h2>
+    </div>
+    <div class="panel-body">
+      <div id="storyEn" class="story-text">
+        <div class="placeholder">⬡ Story will appear here after generation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hindi Story -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="icon">🇮🇳</span>
+      <h2>हिंदी अनुवाद</h2>
+    </div>
+    <div class="panel-body">
+      <div id="storyHi" class="story-text hindi">
+        <div class="placeholder">⬡ हिंदी अनुवाद यहाँ दिखेगा</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Player -->
+  <div class="panel audio-section" id="audioSection">
+    <div class="panel-header">
+      <span class="icon">🔊</span>
+      <h2>HINDI AUDIO NARRATION</h2>
+      <span class="badge" id="moodBadge">—</span>
+    </div>
+    <div class="panel-body">
+      <div class="audio-player-wrap">
+        <audio id="audioPlayer" controls></audio>
+        <a class="download-btn" id="downloadBtn" href="#" download>⬇ DOWNLOAD WAV</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const API = "http://localhost:8000";
+let currentStep = 0;
+let stepTimer;
+
+function setExample(el) {
+  document.getElementById("ruleInput").value = el.textContent;
+}
+
+function setStep(n) {
+  ["step1","step2","step3"].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove("active","done");
+    const icon = el.querySelector(".step-icon");
+    if (i < n)       { el.classList.add("done");   icon.textContent = "✅"; }
+    else if (i === n) { el.classList.add("active"); icon.innerHTML = '<div class="spinner"></div>'; }
+    else { icon.textContent = ["📝","🌐","🎵"][i]; }
+  });
+}
+
+function simulateProgress() {
+  setStep(0);
+  stepTimer = setTimeout(() => setStep(1), 15000);
+  const t2 = setTimeout(() => setStep(2), 35000);
+  return () => { clearTimeout(stepTimer); clearTimeout(t2); };
+}
+
+async function generate() {
+  const rule      = document.getElementById("ruleInput").value.trim();
+  const plantName = document.getElementById("plantName").value.trim() || "PowerPlant";
+  const errBox    = document.getElementById("errorBox");
+
+  errBox.classList.remove("visible");
+
+  if (!rule) {
+    errBox.textContent = "⚠ Please enter a safety rule first.";
+    errBox.classList.add("visible");
+    return;
+  }
+
+  const btn = document.getElementById("generateBtn");
+  btn.disabled = true;
+  document.getElementById("btnText").textContent = "GENERATING...";
+  document.getElementById("progressWrap").classList.add("visible");
+  document.getElementById("audioSection").classList.remove("visible");
+  document.getElementById("storyEn").innerHTML = '<div class="placeholder">⬡ Generating...</div>';
+  document.getElementById("storyHi").innerHTML = '<div class="placeholder">⬡ अनुवाद हो रहा है...</div>';
+
+  const stopProgress = simulateProgress();
+
+  try {
+    const res = await fetch(`${API}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rule, plant_name: plantName })
+    });
+
+    stopProgress();
+    setStep(2);
+    await new Promise(r => setTimeout(r, 500));
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || "Unknown error");
+    }
+
+    // Stories
+    document.getElementById("storyEn").textContent = data.story_en;
+    document.getElementById("storyHi").textContent = data.story_hi;
+
+    // Audio
+    const audioEl   = document.getElementById("audioPlayer");
+    const downloadEl = document.getElementById("downloadBtn");
+    const audioUrl  = `${API}${data.audio_url}`;
+    audioEl.src     = audioUrl;
+    downloadEl.href = audioUrl;
+    downloadEl.download = "suraksha_vaani_narration.wav";
+
+    // Mood
+    const mood = detectMood(data.story_en);
+    const moodBadge = document.getElementById("moodBadge");
+    moodBadge.textContent  = mood.toUpperCase();
+    moodBadge.className    = `badge mood-${mood}`;
+
+    document.getElementById("audioSection").classList.add("visible");
+    ["step1","step2","step3"].forEach(id => {
+      document.getElementById(id).classList.add("done");
+      document.getElementById(id).querySelector(".step-icon").textContent = "✅";
+    });
+
+  } catch(err) {
+    stopProgress();
+    errBox.textContent = "⚠ " + err.message;
+    errBox.classList.add("visible");
+    document.getElementById("progressWrap").classList.remove("visible");
+  }
+
+  btn.disabled = false;
+  document.getElementById("btnText").textContent = "GENERATE SAFETY STORY";
+}
+
+function detectMood(text) {
+  const t = text.toLowerCase();
+  if (["injury","hospital","burn","shock","serious","accident"].some(w => t.includes(w))) return "tense";
+  if (["near miss","minor","lesson","realized","avoided"].some(w => t.includes(w))) return "calm";
+  return "inspirational";
+}
+
+document.getElementById("ruleInput").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.ctrlKey) generate();
+});
+</script>
+</body>
+</html>
