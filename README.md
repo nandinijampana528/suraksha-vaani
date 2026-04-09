@@ -413,6 +413,11 @@ story = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', story)
 
 ---
 
+**Nandini Jampana** — nandinijampana528@gmail.com  
+[GitHub](https://github.com/nandinijampana528/) · [LinkedIn](https://www.linkedin.com/in/nandini-jampana-714524172/)
+
+---
+
 ## 📄 License
 
 MIT
